@@ -1,8 +1,6 @@
 # diag2md Documentation
 
-Documentation and guides for `diag2md` CLI and library.
+Project documentation and design guides.
 
-## Architecture & Domain Specifications
-
-- System architecture and agent domain specifications are located in [`../AGENTS.md`](../AGENTS.md).
-- Root documentation is maintained in [`../README.md`](../README.md).
+- System Architecture: [`../AGENTS.md`](../AGENTS.md)
+- Root Overview & Usage: [`../README.md`](../README.md)
