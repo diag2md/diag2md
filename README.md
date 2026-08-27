@@ -1,6 +1,6 @@
 # diag2md Documentation
 
-`diag2md` is a CLI application and Node.js/TypeScript library designed to convert Draw.io C4 architecture diagrams (`.xml` or `.drawio` files) into Mermaid Markdown formatted diagrams.
+`diag2md` is a CLI application and Node.js/TypeScript library designed to convert Draw.io (diagrams.net) [C4](https://c4model.com) architecture diagrams (`.xml` or `.drawio` files) into [Mermaid](https://mermaid.js.org) Markdown formatted diagrams.
 
 ---
 
@@ -27,7 +27,7 @@ node dist/cli.js -i examples/sample-c4.drawio -o output.md -t c4
 | Option | Alias | Description | Required | Default |
 | --- | --- | --- | --- | --- |
 | `--input <path>` | `-i` | Path to input Draw.io diagram file (`.xml` or `.drawio`) | **Yes** | — |
-| `--output <path>` | `-o` | Path to save generated Mermaid Markdown (`.md`) file | No | `stdout` |
+| `--output <path>` | `-o` | Path to save generated [Mermaid](https://mermaid.js.org) Markdown (`.md`) file | No | `stdout` |
 | `--type <type>` | `-t` | Type of diagram conversion (`'c4'` or `'uml'`) | No | `'c4'` |
 | `--version` | `-V` | Output version number | No | — |
 | `--help` | `-h` | Display command help and available flags | No | — |
