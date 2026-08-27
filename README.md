@@ -4,6 +4,26 @@
 
 ---
 
+## Draw.io Authoring Guidelines for C4 Diagrams
+
+To ensure accurate XML parsing and valid Mermaid C4 output, follow these key guidelines when creating your diagrams in Draw.io (diagrams.net):
+
+1. **Properly Connect Relationships (Arrows & Connectors)**
+   - Always snap relationship arrows directly to the connection points of source and target shapes.
+   - Unconnected or floating arrows will not establish `source` and `target` cell references in the underlying XML, which prevents relationship edges from being converted.
+   - 📖 *Guide*: [Draw.io Connectors & Connection Points](https://www.drawio.com/doc/faq/connectors)
+
+2. **Group Boundaries & Containers (Parent-Child Hierarchy)**
+   - Place elements (such as Containers, Databases, or Components) directly inside System or Container Boundary shapes.
+   - Ensure boundary shapes act as container shapes in Draw.io so the parent-child hierarchy is recorded in the XML structure and properly translated into Mermaid `System_Boundary` blocks.
+   - 📖 *Guide*: [Draw.io Container Shapes & Grouping](https://www.drawio.com/doc/faq/group-shapes)
+
+3. **Use Standard C4 Shapes**
+   - Use standard Draw.io C4 shapes or custom object attributes (`c4Type`, `c4Name`, `c4Technology`, `c4Description`) for seamless C4 element type recognition.
+   - 📖 *Resource*: [Draw.io C4 Shape Library & Plugin](https://github.com/vknestedal/drawio-c4-shapes)
+
+---
+
 ## CLI Usage
 
 ```bash
