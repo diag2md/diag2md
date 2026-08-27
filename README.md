@@ -3,7 +3,7 @@
 > Convert Draw.io ([diagrams.net](https://app.diagrams.net)) [C4 architecture diagrams](https://c4model.com) (`.xml` or `.drawio` files) into clean [Mermaid](https://mermaid.js.org) Markdown format.
 
 [![npm version](https://img.shields.io/npm/v/diag2md.svg)](https://www.npmjs.com/package/diag2md)
-[![license](https://img.shields.io/npm/l/diag2md.svg)](https://github.com/diag2md/diag2md/blob/main/LICENSE)
+[![license](https://img.shields.io/github/license/diag2md/diag2md.svg)](https://github.com/diag2md/diag2md/blob/main/LICENSE)
 
 `diag2md` is a lightweight CLI application and TypeScript/Node.js library that parses Draw.io diagram files—including multi-page and deflated/compressed XML diagrams—and outputs valid Mermaid Markdown diagrams ready to render in GitHub, GitLab, Notion, or documentation sites.
 
