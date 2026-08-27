@@ -11,6 +11,7 @@ export interface DrawIoCell {
   source?: string;
   target?: string;
   attributes?: Record<string, string>;
+  diagramName?: string;
 }
 
 export interface DrawIoGraph {
@@ -57,18 +58,24 @@ export function parseDrawIoXml(xmlContent: string): DrawIoGraph {
   });
 
   const parsed = parser.parse(xmlContent);
-  let rootNode: any = null;
-  let diagramName = "";
-  let diagramId = "";
+  const cells: DrawIoCell[] = [];
+  let mainDiagramName = "";
+  let mainDiagramId = "";
 
   if (parsed.mxfile) {
-    let diagram = parsed.mxfile.diagram;
-    if (Array.isArray(diagram)) {
-      diagram = diagram[0];
-    }
-    if (diagram) {
-      diagramName = diagram["@_name"] || "";
-      diagramId = diagram["@_id"] || "";
+    const rawDiagrams = parsed.mxfile.diagram;
+    const diagrams = Array.isArray(rawDiagrams) ? rawDiagrams : rawDiagrams ? [rawDiagrams] : [];
+
+    diagrams.forEach((diagram: any, index: number) => {
+      const diagramName = diagram["@_name"] || `Page-${index + 1}`;
+      const diagramId = diagram["@_id"] || `page-${index + 1}`;
+
+      if (index === 0) {
+        mainDiagramName = diagramName;
+        mainDiagramId = diagramId;
+      }
+
+      let rootNode: any = null;
       if (typeof diagram === "string") {
         const decompressedXml = decodeDrawIoDiagram(diagram);
         const innerParsed = parser.parse(decompressedXml);
@@ -80,80 +87,83 @@ export function parseDrawIoXml(xmlContent: string): DrawIoGraph {
       } else if (diagram.mxGraphModel) {
         rootNode = diagram.mxGraphModel.root;
       }
-    }
+
+      if (rootNode) {
+        extractCellsFromRoot(rootNode, diagramName, cells);
+      }
+    });
   } else if (parsed.mxGraphModel) {
-    rootNode = parsed.mxGraphModel.root;
-  }
-
-  const cells: DrawIoCell[] = [];
-
-  if (rootNode) {
-    const processCell = (cellData: any, extraAttributes: Record<string, string> = {}) => {
-      const id = cellData["@_id"] || extraAttributes.id || "";
-      const value = cellData["@_value"] || extraAttributes.label || extraAttributes.value || "";
-      const style = cellData["@_style"] || "";
-      const parent = cellData["@_parent"] || extraAttributes.parent;
-      const vertex = cellData["@_vertex"] === "1" || cellData["@_vertex"] === 1 || cellData["@_vertex"] === true;
-      const edge = cellData["@_edge"] === "1" || cellData["@_edge"] === 1 || cellData["@_edge"] === true;
-      const source = cellData["@_source"] || extraAttributes.source;
-      const target = cellData["@_target"] || extraAttributes.target;
-
-      if (id && id !== "0" && id !== "1") {
-        cells.push({
-          id: String(id),
-          value: unescapeHtml(String(value)),
-          style: String(style),
-          parent: parent ? String(parent) : undefined,
-          vertex,
-          edge,
-          source: source ? String(source) : undefined,
-          target: target ? String(target) : undefined,
-          attributes: extraAttributes,
-        });
-      }
-    };
-
-    // Helper to traverse cells and objects
-    const extractFromRoot = (container: any) => {
-      if (!container) return;
-
-      if (container.mxCell) {
-        const rawCells = Array.isArray(container.mxCell) ? container.mxCell : [container.mxCell];
-        rawCells.forEach((c: any) => processCell(c));
-      }
-
-      if (container.object) {
-        const rawObjects = Array.isArray(container.object) ? container.object : [container.object];
-        rawObjects.forEach((obj: any) => {
-          const attrs: Record<string, string> = {};
-          Object.keys(obj).forEach((key) => {
-            if (key.startsWith("@_")) {
-              attrs[key.substring(2)] = String(obj[key]);
-            }
-          });
-          if (obj.mxCell) {
-            processCell(obj.mxCell, attrs);
-          }
-        });
-      }
-    };
-
-    extractFromRoot(rootNode);
+    if (parsed.mxGraphModel.root) {
+      extractCellsFromRoot(parsed.mxGraphModel.root, "Diagram", cells);
+    }
   }
 
   return {
-    diagramId,
-    diagramName,
+    diagramId: mainDiagramId,
+    diagramName: mainDiagramName,
     cells,
   };
 }
 
+function extractCellsFromRoot(rootNode: any, diagramName: string, cellsOut: DrawIoCell[]) {
+  const processCell = (cellData: any, extraAttributes: Record<string, string> = {}) => {
+    const id = cellData["@_id"] || extraAttributes.id || "";
+    let value = cellData["@_value"] || extraAttributes.label || extraAttributes.value || "";
+    const style = cellData["@_style"] || "";
+    const parent = cellData["@_parent"] || extraAttributes.parent;
+    const vertex = cellData["@_vertex"] === "1" || cellData["@_vertex"] === 1 || cellData["@_vertex"] === true;
+    const edge = cellData["@_edge"] === "1" || cellData["@_edge"] === 1 || cellData["@_edge"] === true;
+    const source = cellData["@_source"] || extraAttributes.source;
+    const target = cellData["@_target"] || extraAttributes.target;
+
+    // Substitute placeholders like %c4Name% using extraAttributes
+    if (value && extraAttributes) {
+      value = value.replace(/%(\w+)%/g, (_: string, key: string) => extraAttributes[key] || "");
+    }
+
+    if (id && id !== "0" && id !== "1") {
+      cellsOut.push({
+        id: String(id),
+        value: unescapeHtml(String(value)),
+        style: String(style),
+        parent: parent ? String(parent) : undefined,
+        vertex,
+        edge,
+        source: source ? String(source) : undefined,
+        target: target ? String(target) : undefined,
+        attributes: extraAttributes,
+        diagramName,
+      });
+    }
+  };
+
+  if (rootNode.mxCell) {
+    const rawCells = Array.isArray(rootNode.mxCell) ? rootNode.mxCell : [rootNode.mxCell];
+    rawCells.forEach((c: any) => processCell(c));
+  }
+
+  if (rootNode.object) {
+    const rawObjects = Array.isArray(rootNode.object) ? rootNode.object : [rootNode.object];
+    rawObjects.forEach((obj: any) => {
+      const attrs: Record<string, string> = {};
+      Object.keys(obj).forEach((key) => {
+        if (key.startsWith("@_")) {
+          attrs[key.substring(2)] = String(obj[key]);
+        }
+      });
+      if (obj.mxCell) {
+        processCell(obj.mxCell, attrs);
+      }
+    });
+  }
+}
+
 function unescapeHtml(str: string): string {
   return str
-    .replace(/&#10;/g, "\n")
-    .replace(/&#13;/g, "\r")
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&#10;|&#xa;|&#xA;/g, "\n")
+    .replace(/&#13;|&#xd;|&#xD;/g, "\r")
+    .replace(/&#(\d+);/g, (_: string, code: string) => String.fromCharCode(parseInt(code, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_: string, code: string) => String.fromCharCode(parseInt(code, 16)))
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&")

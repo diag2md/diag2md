@@ -23,7 +23,7 @@ describe("drawio-parser", () => {
     const graph = parseDrawIoXml(xml);
     expect(graph.diagramName).toBe("Context");
     expect(graph.cells.length).toBe(3); // cell 2, 3, 4 (0 and 1 skipped)
-    
+
     const person = graph.cells.find((c) => c.id === "2");
     expect(person?.value).toBe("Customer");
     expect(person?.vertex).toBe(true);
@@ -42,5 +42,21 @@ describe("drawio-parser", () => {
     const decoded = decodeDrawIoDiagram(base64);
     expect(decoded).toContain("<mxGraphModel>");
     expect(decoded).toContain("User");
+  });
+
+  it("should parse multi-page draw.io diagram files", () => {
+    const xml = `
+      <mxfile pages="2">
+        <diagram id="p1" name="Page 1">
+          <mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="c1" value="System 1" vertex="1"/></root></mxGraphModel>
+        </diagram>
+        <diagram id="p2" name="Page 2">
+          <mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="c2" value="System 2" vertex="1"/></root></mxGraphModel>
+        </diagram>
+      </mxfile>
+    `;
+    const graph = parseDrawIoXml(xml);
+    expect(graph.cells.length).toBe(2);
+    expect(graph.cells.map((c) => c.id)).toEqual(["c1", "c2"]);
   });
 });

@@ -26,8 +26,12 @@ export interface C4Relationship {
 export function convertDrawIoToMermaidC4(graph: DrawIoGraph): string {
   const nodesMap = new Map<string, C4Node>();
   const relationships: C4Relationship[] = [];
-  const vertexCells = graph.cells.filter((c) => c.vertex);
-  const edgeCells = graph.cells.filter((c) => c.edge && c.source && c.target);
+
+  // Vertex candidate cells (excluding relationship objects)
+  const vertexCells = graph.cells.filter((c) => c.vertex || (c.attributes?.c4Type && c.attributes.c4Type.toLowerCase() !== "relationship"));
+
+  // Edge candidate cells
+  const edgeCells = graph.cells.filter((c) => c.edge || (c.attributes?.c4Type && c.attributes.c4Type.toLowerCase() === "relationship"));
 
   // Identify nodes
   for (const cell of vertexCells) {
@@ -63,7 +67,7 @@ export function convertDrawIoToMermaidC4(graph: DrawIoGraph): string {
     const targetNode = nodesMap.get(cell.target);
 
     if (sourceNode && targetNode) {
-      const { label, technology } = parseRelationshipContent(cell.value);
+      const { label, technology } = parseRelationshipContent(cell);
       relationships.push({
         id: cell.id,
         from: sourceNode.alias,
@@ -83,7 +87,6 @@ export function convertDrawIoToMermaidC4(graph: DrawIoGraph): string {
 
   lines.push("");
 
-  // Render top-level boundaries & nodes
   const processedNodeIds = new Set<string>();
 
   // Helper to render boundary container
@@ -129,19 +132,27 @@ export function convertDrawIoToMermaidC4(graph: DrawIoGraph): string {
 
 function isIgnorableCell(cell: DrawIoCell): boolean {
   if (!cell.id || cell.id === "0" || cell.id === "1") return true;
-  // Ignore cells with no style and empty value that aren't boundaries
-  if (!cell.style && !cell.value && !cell.attributes?.c4Type) return true;
+  const c4Type = (cell.attributes?.c4Type || "").toLowerCase();
+  if (c4Type === "relationship") return true;
+  if (!cell.style && !cell.value && !cell.attributes?.c4Type && !cell.vertex) return true;
   return false;
 }
 
 function detectC4Type(cell: DrawIoCell): C4Node["type"] {
   const style = (cell.style || "").toLowerCase();
-  const c4TypeAttr = cell.attributes?.c4Type;
+  const c4TypeAttr = (cell.attributes?.c4Type || "").toLowerCase();
   const val = (cell.value || "").toLowerCase();
 
   if (c4TypeAttr) {
-    const matched = matchTypeString(c4TypeAttr);
-    if (matched) return matched;
+    if (c4TypeAttr.includes("systemscopeboundary") || c4TypeAttr.includes("boundary")) return "Boundary";
+    if (c4TypeAttr.includes("software system") || c4TypeAttr === "system") return "System";
+    if (c4TypeAttr.includes("containerdb")) return "ContainerDb";
+    if (c4TypeAttr.includes("container")) return "Container";
+    if (c4TypeAttr.includes("component")) return "Component";
+    if (c4TypeAttr.includes("person_ext")) return "Person_Ext";
+    if (c4TypeAttr.includes("person")) return "Person";
+    if (c4TypeAttr.includes("system_ext")) return "System_Ext";
+    if (c4TypeAttr.includes("systemdb")) return "SystemDb";
   }
 
   if (style.includes("person_ext") || val.includes("«person_ext»") || val.includes("external person")) {
@@ -159,37 +170,20 @@ function detectC4Type(cell: DrawIoCell): C4Node["type"] {
   if (style.includes("system") || val.includes("«system»") || style.includes("c4.softwaresystem") || style.includes("c4.system")) {
     return "System";
   }
-  if (style.includes("containerdb") || val.includes("container db")) {
+  if (style.includes("containerdb") || val.includes("container db") || style.includes("cylinder3")) {
     return "ContainerDb";
   }
-  if (style.includes("container") || val.includes("«container»") || style.includes("c4.container")) {
+  if (style.includes("container") || val.includes("«container»") || style.includes("c4.container") || style.includes("webbrowsercontainer")) {
     return "Container";
   }
   if (style.includes("component") || val.includes("«component»") || style.includes("c4.component")) {
     return "Component";
   }
-  if (style.includes("group") || style.includes("swimlane") || style.includes("boundary")) {
+  if (style.includes("group") || style.includes("swimlane") || style.includes("boundary") || style.includes("dashed")) {
     return "Boundary";
   }
 
-  // Fallback default
   return "System";
-}
-
-function matchTypeString(str: string): C4Node["type"] | null {
-  const normalized = str.trim().toLowerCase();
-  switch (normalized) {
-    case "person": return "Person";
-    case "person_ext": return "Person_Ext";
-    case "system": return "System";
-    case "system_ext": return "System_Ext";
-    case "systemdb": return "SystemDb";
-    case "container": return "Container";
-    case "containerdb": return "ContainerDb";
-    case "component": return "Component";
-    case "boundary": return "Boundary";
-    default: return null;
-  }
 }
 
 function parseC4Content(cell: DrawIoCell): { label: string; description?: string; technology?: string } {
@@ -197,8 +191,13 @@ function parseC4Content(cell: DrawIoCell): { label: string; description?: string
   let description = cell.attributes?.c4Description || cell.attributes?.description || "";
   let technology = cell.attributes?.c4Technology || cell.attributes?.technology || "";
 
-  if (!label && cell.value) {
-    const lines = cell.value.split("\n").map((l) => l.trim()).filter(Boolean);
+  let val = cell.value || "";
+  if (cell.attributes) {
+    val = val.replace(/%(\w+)%/g, (_, key) => cell.attributes![key] || "");
+  }
+
+  if (!label && val) {
+    const lines = val.split("\n").map((l) => l.trim()).filter(Boolean);
     if (lines.length > 0) {
       label = lines[0].replace(/«[^»]+»/g, "").trim();
     }
@@ -215,6 +214,11 @@ function parseC4Content(cell: DrawIoCell): { label: string; description?: string
     }
   }
 
+  // Clean remaining placeholders or TODO markers
+  label = cleanText(label);
+  description = cleanText(description);
+  technology = cleanText(technology);
+
   if (!label) {
     label = `Element_${cell.id}`;
   }
@@ -226,12 +230,17 @@ function parseC4Content(cell: DrawIoCell): { label: string; description?: string
   };
 }
 
-function parseRelationshipContent(value: string): { label: string; technology?: string } {
-  let label = "";
-  let technology: string | undefined;
+function parseRelationshipContent(cell: DrawIoCell): { label: string; technology?: string } {
+  let label = cell.attributes?.c4Description || cell.attributes?.label || "";
+  let technology = cell.attributes?.c4Technology || cell.attributes?.technology || "";
 
-  if (value) {
-    const lines = value.split("\n").map((l) => l.trim()).filter(Boolean);
+  let val = cell.value || "";
+  if (cell.attributes) {
+    val = val.replace(/%(\w+)%/g, (_, key) => cell.attributes![key] || "");
+  }
+
+  if (!label && val) {
+    const lines = val.split("\n").map((l) => l.trim()).filter(Boolean);
     if (lines.length > 0) {
       label = lines[0];
     }
@@ -243,7 +252,10 @@ function parseRelationshipContent(value: string): { label: string; technology?: 
     }
   }
 
-  return { label: label || "Uses", technology };
+  label = cleanText(label);
+  technology = cleanText(technology);
+
+  return { label: label || "Uses", technology: technology || undefined };
 }
 
 function formatC4Element(node: C4Node): string {
@@ -272,6 +284,10 @@ function formatC4Element(node: C4Node): string {
     default:
       return `System(${alias}, "${label}"${desc})`;
   }
+}
+
+function cleanText(str: string): string {
+  return str.replace(/%[^%]+%/g, "").trim();
 }
 
 function sanitizeAlias(str: string): string {
