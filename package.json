@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "description": "Converts Draw.io C4 architecture diagrams into Mermaid Markdown",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "bin": {
     "diag2md": "dist/cli.js"
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm run test"
   },
   "dependencies": {
     "commander": "^12.1.0",
