@@ -1,0 +1,44 @@
+{
+  "name": "diag2md",
+  "version": "1.0.0",
+  "description": "Converts Draw.io C4 architecture diagrams into Mermaid Markdown",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "diag2md": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "fast-xml-parser": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.2",
+    "vitest": "^1.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diag2md/diag2md.git"
+  },
+  "author": "polymatic.ventures",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/diag2md/diag2md/issues"
+  },
+  "homepage": "https://github.com/diag2md/diag2md#readme",
+  "keywords": [
+    "diagrams",
+    "draw.io",
+    "diagrams.net",
+    "c4",
+    "mermaid",
+    "markdown",
+    "architecture"
+  ]
+}

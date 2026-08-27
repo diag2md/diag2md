@@ -1,0 +1,25 @@
+<mxfile host="Electron" name="Payment Architecture">
+  <diagram id="d-1" name="Payment System Context">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user_1" value="Merchant&#10;Primary ecommerce merchant" style="shape=mxgraph.c4.person;" parent="1" vertex="1">
+          <mxGeometry x="100" y="100" width="160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_1" value="Payment Gateway&#10;[Node.js / Express]&#10;Processes incoming payment requests" style="shape=mxgraph.c4.container;" parent="1" vertex="1">
+          <mxGeometry x="350" y="100" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_2" value="Bank API&#10;[REST]&#10;External banking provider" style="shape=mxgraph.c4.system_ext;" parent="1" vertex="1">
+          <mxGeometry x="650" y="100" width="180" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_1" value="Submits Transactions&#10;[JSON/HTTPS]" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="user_1" target="sys_1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_2" value="Authorizes Payment&#10;[mTLS]" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="sys_1" target="sys_2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
