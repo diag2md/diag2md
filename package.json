@@ -1,6 +1,6 @@
 {
   "name": "diag2md",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Converts Draw.io C4 architecture diagrams into Mermaid Markdown",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
