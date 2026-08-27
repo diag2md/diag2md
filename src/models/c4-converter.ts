@@ -1,4 +1,4 @@
-import { DrawIoGraph, DrawIoCell } from "../parsers/drawio-parser.js";
+import { DrawIoGraph, DrawIoDiagram, DrawIoCell } from "../parsers/drawio-parser.js";
 
 export interface C4Node {
   id: string;
@@ -24,14 +24,29 @@ export interface C4Relationship {
  * Scope: C4_to_Mermaid_Agent (/src/models)
  */
 export function convertDrawIoToMermaidC4(graph: DrawIoGraph): string {
+  const diagrams: DrawIoDiagram[] =
+    graph.diagrams && graph.diagrams.length > 0
+      ? graph.diagrams
+      : [
+          {
+            id: graph.diagramId,
+            name: graph.diagramName,
+            cells: graph.cells || [],
+          },
+        ];
+
+  return diagrams.map((diagram) => convertSingleDiagramToMermaidC4(diagram)).join("\n\n");
+}
+
+function convertSingleDiagramToMermaidC4(diagram: DrawIoDiagram): string {
   const nodesMap = new Map<string, C4Node>();
   const relationships: C4Relationship[] = [];
 
   // Vertex candidate cells (excluding relationship objects)
-  const vertexCells = graph.cells.filter((c) => c.vertex || (c.attributes?.c4Type && c.attributes.c4Type.toLowerCase() !== "relationship"));
+  const vertexCells = diagram.cells.filter((c) => c.vertex || (c.attributes?.c4Type && c.attributes.c4Type.toLowerCase() !== "relationship"));
 
   // Edge candidate cells
-  const edgeCells = graph.cells.filter((c) => c.edge || (c.attributes?.c4Type && c.attributes.c4Type.toLowerCase() === "relationship"));
+  const edgeCells = diagram.cells.filter((c) => c.edge || (c.attributes?.c4Type && c.attributes.c4Type.toLowerCase() === "relationship"));
 
   // Identify nodes
   for (const cell of vertexCells) {
@@ -81,8 +96,8 @@ export function convertDrawIoToMermaidC4(graph: DrawIoGraph): string {
   // Build Mermaid C4 Markdown output
   const lines: string[] = ["```mermaid", "C4Context"];
 
-  if (graph.diagramName) {
-    lines.push(`  title ${graph.diagramName}`);
+  if (diagram.name) {
+    lines.push(`  title ${diagram.name}`);
   }
 
   lines.push("");

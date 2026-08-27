@@ -58,5 +58,10 @@ describe("drawio-parser", () => {
     const graph = parseDrawIoXml(xml);
     expect(graph.cells.length).toBe(2);
     expect(graph.cells.map((c) => c.id)).toEqual(["c1", "c2"]);
+    expect(graph.diagrams.length).toBe(2);
+    expect(graph.diagrams[0].name).toBe("Page 1");
+    expect(graph.diagrams[0].cells.map((c) => c.id)).toEqual(["c1"]);
+    expect(graph.diagrams[1].name).toBe("Page 2");
+    expect(graph.diagrams[1].cells.map((c) => c.id)).toEqual(["c2"]);
   });
 });

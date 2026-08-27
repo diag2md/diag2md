@@ -29,4 +29,40 @@ describe("c4-converter", () => {
     expect(mermaid).toContain('Container(node_3, "Internet Banking", "Spring Boot", "Allows online banking")');
     expect(mermaid).toContain('Rel(node_2, node_3, "Submits Payments", "HTTPS")');
   });
+
+  it("should convert multi-page Draw.io diagrams into separate ```mermaid blocks", () => {
+    const xml = `
+      <mxfile pages="2">
+        <diagram id="diag-1" name="System Context">
+          <mxGraphModel>
+            <root>
+              <mxCell id="0" />
+              <mxCell id="1" parent="0" />
+              <mxCell id="2" value="User" style="shape=mxgraph.c4.person;" parent="1" vertex="1" />
+            </root>
+          </mxGraphModel>
+        </diagram>
+        <diagram id="diag-2" name="Container View">
+          <mxGraphModel>
+            <root>
+              <mxCell id="0" />
+              <mxCell id="1" parent="0" />
+              <mxCell id="3" value="API Gateway" style="shape=mxgraph.c4.container;" parent="1" vertex="1" />
+            </root>
+          </mxGraphModel>
+        </diagram>
+      </mxfile>
+    `;
+
+    const graph = parseDrawIoXml(xml);
+    const mermaid = convertDrawIoToMermaidC4(graph);
+
+    const blocks = mermaid.split("```mermaid");
+    expect(blocks.length).toBe(3); // split by ```mermaid gives empty string before 1st block, then 2 blocks
+
+    expect(mermaid).toContain("title System Context");
+    expect(mermaid).toContain("title Container View");
+    expect(mermaid).toContain('Person(node_2, "User")');
+    expect(mermaid).toContain('Container(node_3, "API Gateway")');
+  });
 });

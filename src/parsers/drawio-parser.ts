@@ -14,10 +14,17 @@ export interface DrawIoCell {
   diagramName?: string;
 }
 
+export interface DrawIoDiagram {
+  id?: string;
+  name?: string;
+  cells: DrawIoCell[];
+}
+
 export interface DrawIoGraph {
   diagramId?: string;
   diagramName?: string;
   cells: DrawIoCell[];
+  diagrams: DrawIoDiagram[];
 }
 
 /**
@@ -58,9 +65,7 @@ export function parseDrawIoXml(xmlContent: string): DrawIoGraph {
   });
 
   const parsed = parser.parse(xmlContent);
-  const cells: DrawIoCell[] = [];
-  let mainDiagramName = "";
-  let mainDiagramId = "";
+  const diagramsList: DrawIoDiagram[] = [];
 
   if (parsed.mxfile) {
     const rawDiagrams = parsed.mxfile.diagram;
@@ -69,11 +74,7 @@ export function parseDrawIoXml(xmlContent: string): DrawIoGraph {
     diagrams.forEach((diagram: any, index: number) => {
       const diagramName = diagram["@_name"] || `Page-${index + 1}`;
       const diagramId = diagram["@_id"] || `page-${index + 1}`;
-
-      if (index === 0) {
-        mainDiagramName = diagramName;
-        mainDiagramId = diagramId;
-      }
+      const pageCells: DrawIoCell[] = [];
 
       let rootNode: any = null;
       if (typeof diagram === "string") {
@@ -89,19 +90,35 @@ export function parseDrawIoXml(xmlContent: string): DrawIoGraph {
       }
 
       if (rootNode) {
-        extractCellsFromRoot(rootNode, diagramName, cells);
+        extractCellsFromRoot(rootNode, diagramName, pageCells);
       }
+
+      diagramsList.push({
+        id: diagramId,
+        name: diagramName,
+        cells: pageCells,
+      });
     });
   } else if (parsed.mxGraphModel) {
+    const pageCells: DrawIoCell[] = [];
     if (parsed.mxGraphModel.root) {
-      extractCellsFromRoot(parsed.mxGraphModel.root, "Diagram", cells);
+      extractCellsFromRoot(parsed.mxGraphModel.root, "Diagram", pageCells);
     }
+    diagramsList.push({
+      id: "diagram-1",
+      name: "Diagram",
+      cells: pageCells,
+    });
   }
 
+  const allCells = diagramsList.flatMap((d) => d.cells);
+  const mainDiagram = diagramsList[0];
+
   return {
-    diagramId: mainDiagramId,
-    diagramName: mainDiagramName,
-    cells,
+    diagramId: mainDiagram?.id || "",
+    diagramName: mainDiagram?.name || "",
+    cells: allCells,
+    diagrams: diagramsList,
   };
 }
 
